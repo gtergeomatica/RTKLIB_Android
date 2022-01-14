@@ -580,7 +580,7 @@ static int satpos_sbas(gtime_t time, gtime_t teph, int sat, const nav_t *nav,
     int i;
     
     trace(4,"satpos_sbas: time=%s sat=%2d\n",time_str(time,3),sat);
-    
+    sbs = nav->sbssat.sat;
     /* search sbas satellite correciton */
     for (i=0;i<nav->sbssat.nsat;i++) {
         sbs=nav->sbssat.sat+i;

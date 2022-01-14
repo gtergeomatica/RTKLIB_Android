@@ -8,8 +8,12 @@
 *-----------------------------------------------------------------------------*/
 #ifndef VT_H
 #define VT_H
+#ifdef WIN32
+#include "./../../../src/termiwin.h"
+#else
 #include <termios.h>
-#include "rtklib.h"
+#endif
+#include "./../../../src/rtklib.h"
 
 #define MAXBUFF     4096                /* size of line buffer */
 #define MAXHIST     256                 /* size of history buffer */

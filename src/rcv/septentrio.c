@@ -233,7 +233,7 @@ static int decode_measepoch(raw_t *raw)
             P1=(U1(p+3)&0x0f)*4294967.296+U4(p+4)*0.001;
             raw->obs.data[n].P[idx]=P1;
         }
-        if (I4(p+8)!=-2147483648) {
+        if (I4(p+8)!=INT_MIN) {
             D1=I4(p+8)*0.0001;
             raw->obs.data[n].D[idx]=(float)D1;
         }

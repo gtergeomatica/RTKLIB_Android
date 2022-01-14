@@ -38,6 +38,8 @@
 *-----------------------------------------------------------------------------*/
 #include <stdlib.h>
 #include <signal.h>
+
+#ifndef WIN32
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/types.h>
@@ -49,7 +51,9 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <errno.h>
-#include "rtklib.h"
+#endif
+
+#include "./../../../src/rtklib.h"
 #include "vt.h"
 
 #define PRGNAME     "rtkrcv"            /* program name */
@@ -73,15 +77,35 @@
 
 /* type defintions -----------------------------------------------------------*/
 
+#ifdef WIN32
+typedef int socklen_t;
+typedef struct {                       /* console type */
+    int state;                         /* state (0:stop,1:run) */
+    vt_t* vt;                          /* virtual terminal */
+    thread_t thread;                  /* console thread */
+} con_t;
+#else
 typedef struct {                       /* console type */
     int state;                         /* state (0:stop,1:run) */
     vt_t *vt;                          /* virtual terminal */
     pthread_t thread;                  /* console thread */
 } con_t;
-
+#endif
 /* function prototypes -------------------------------------------------------*/
-extern FILE *popen(const char *, const char *);
-extern int pclose(FILE *);
+#ifdef WIN32
+extern FILE* popen(const char* cmd, const char* mod)
+{
+    return _popen(cmd, mod);
+}
+
+extern int pclose(FILE* str)
+{
+    return _pclose(str);
+}
+#else
+extern FILE* popen(const char*, const char*);
+extern int pclose(FILE*);
+#endif
 
 /* global variables ----------------------------------------------------------*/
 static rtksvr_t svr;                    /* rtk server struct */
@@ -180,7 +204,7 @@ static const char *pathopts[]={         /* path options help */
 #define FLGOPT  "0:off,1:std+2:age/ratio/ns"
 #define ISTOPT  "0:off,1:serial,2:file,3:tcpsvr,4:tcpcli,7:ntripcli,8:ftp,9:http"
 #define OSTOPT  "0:off,1:serial,2:file,3:tcpsvr,4:tcpcli,6:ntripsvr,11:ntripc_c"
-#define FMTOPT  "0:rtcm2,1:rtcm3,2:oem4,3:oem3,4:ubx,5:ss2,6:hemis,7:skytraq,8:gw10,9:javad,10:nvs,11:binex,12:rt17,13:sbf,14:cmr,15:tersus,18:sp3"
+#define FMTOPT  "0:rtcm2,1:rtcm3,2:oem4,3:oem3,4:ubx,5:ss2,6:hemis,7:skytraq,8:gw10,9:javad,10:nvs,11:binex,12:rt17,13:sbf,14:cmr,15:tersus,18:sp3,99:gterAndroid"
 #define NMEOPT  "0:off,1:latlon,2:single"
 #define SOLOPT  "0:llh,1:xyz,2:enu,3:nmea,4:stat"
 #define MSGOPT  "0:all,1:rover,2:base,3:corr"
@@ -272,7 +296,11 @@ static void *sendkeepalive(void *arg)
 /* open monitor port ---------------------------------------------------------*/
 static int openmoni(int port)
 {
+#ifdef WIN32
+    thread_t thread;
+#else
     pthread_t thread;
+#endif
     char path[64];
     
     trace(3,"openmomi: port=%d\n",port);
@@ -306,7 +334,7 @@ static int confwrite(vt_t *vt, const char *file)
     
     strcpy(buff,file);
     if ((p=strstr(buff,"::"))) *p='\0'; /* omit options in path */
-    if (!vt->state||!(fp=fopen(buff,"r"))) return 1; /* no existing file */
+    if (vt == NULL || (!vt->state||!(fp=fopen(buff,"r")))) return 1; /* no existing file */
     fclose(fp);
     vt_printf(vt,"overwrite %-16s ? (y/n): ",buff);
     if (!vt_gets(vt,buff,sizeof(buff))||vt->brk) return 0;
@@ -1666,6 +1694,7 @@ int main(int argc, char **argv)
     }
     else {
         /* open device for local console */
+/*
         if (!(con[0]=con_open(0,dev))) {
             fprintf(stderr,"console open error dev=%s\n",dev);
             if (moniport>0) closemoni();
@@ -1673,13 +1702,17 @@ int main(int argc, char **argv)
             traceclose();
             return -1;
         }
+*/
     }
     signal(SIGINT, sigshut); /* keyboard interrupt */
     signal(SIGTERM,sigshut); /* external shutdown signal */
+
+#ifndef WIN32
     signal(SIGUSR2,sigshut);
     signal(SIGHUP ,SIG_IGN);
     signal(SIGPIPE,SIG_IGN);
-    
+#endif
+
     /* start rtk server */
     if (start) {
         startsvr(NULL);

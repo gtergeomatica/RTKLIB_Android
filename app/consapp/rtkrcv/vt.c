@@ -18,7 +18,7 @@
 #include <winsock2.h>
 #else
 #include <unistd.h>
-#include <fcntl.h>
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/time.h>
@@ -31,6 +31,7 @@
 #include <termios.h>
 #endif
 #include "vt.h"
+#include <fcntl.h>
 
 #define DEF_DEV     "/dev/tty"          /* default console device */
 
