@@ -1,8 +1,8 @@
 #include "../rtklib.h"
 #include<stdbool.h>
 
-#define AGSYNC1    82        /* gter message sync code 1 "R"  N 78*/
-#define AGSYNC2    97        /* gter message sync code 2 "a"  B 66*/
+#define AGSYNC1    78        /* gter message sync code 1 "R"  N 78*/
+#define AGSYNC2    66        /* gter message sync code 2 "a"  B 66*/
 
 #define SPEED_OF_LIGHT 299792458.0  // [m/s]
 #define GPS_WEEKSEC 604800  // Number of seconds in a week
@@ -468,72 +468,110 @@ double computeDoppler(androidgnssmeas gnssdata)
 	return doppler;
 }
 
+char* mystrsep(char** stringp, const char* delim)
+{
+	char* start = *stringp;
+	char* p;
+
+	p = (start != NULL) ? strpbrk(start, delim) : NULL;
+
+	if (p == NULL)
+	{
+		*stringp = NULL;
+	}
+	else
+	{
+		*p = '\0';
+		*stringp = p + 1;
+	}
+
+	return start;
+}
+
+
 
 static int decode_gterAndroid(raw_t* raw)
 {
     // code here to decode android message
 
     //parse
-    int row_count_r = 0;
-    int col_count_r = 0;
-    char* col = strtok(raw->buff, ",");
+ //   int row_count_r = 0;
+ //   int col_count_r = 0;
+ //   char* col = strtok(raw->buff, ",");
+
+	const char delimiters[] = ",";
+	char* running;
+	char* currstrval; //current field read in the str	
+	int ncolmeas = 30; //number of fields for single measurement
+	int nmeas;
+	
+
+	running = raw->buff;
+
+	//read the number of Raw meas sent for this epoch
+	for (int i = 0; i < 2; i++) {
+		currstrval = mystrsep(&running, delimiters);
+		if (i == 1)
+			nmeas = atoi(currstrval);
+	}
+
+	//read values in every Raw meas 
+	androidgnssmeas* andrawdata = malloc(sizeof(androidgnssmeas)*nmeas);
+	for (int n = 0; n < nmeas; n++) {
+
+		for (int j = 0; j < ncolmeas; j++) {
+			currstrval = mystrsep(&running, delimiters);
+			if (j == 0)
+				strcpy(andrawdata[n].typemeas, currstrval);
+			else if (j == 1)
+				andrawdata[n].utcTimeMillis = atoll(currstrval);
+			else if (j == 2)
+				andrawdata[n].TimeNanos = atoll(currstrval);
+			else if (j == 5)
+				andrawdata[n].FullBiasNanos = atoll(currstrval);
+			else if (j == 6)
+				sscanf(currstrval, "%lf", &andrawdata[n].BiasNanos);
+			else if (j == 11)
+				andrawdata[n].Svid = atoi(currstrval);
+			else if (j == 12)
+				andrawdata[n].TimeOffsetNanos = atoi(currstrval);
+			else if (j == 13)
+				andrawdata[n].State = atoi(currstrval);
+			else if (j == 14)
+				andrawdata[n].ReceivedSvTimeNanos = atoll(currstrval);
+			else if (j == 16)
+				sscanf(currstrval, "%lf", &andrawdata[n].Cn0);
+			else if (j == 17)
+				sscanf(currstrval, "%lf", &andrawdata[n].PseudorangeRateMetersPerSecond);
+			else if (j == 19)
+				andrawdata[n].ADRState = atoi(currstrval);
+			else if (j == 20)
+				sscanf(currstrval, "%lf", &andrawdata[n].AccumulatedDeltaRange);
+			else if (j == 22)
+				sscanf(currstrval, "%lf", &andrawdata[n].CarrierFrequencyHz);
+			else if (j == 28)
+				andrawdata[n].ConstellationType = atoi(currstrval);
+		}
+	}
 
 
-    androidgnssmeas andrawdata;
-    while (col)
-    {
-        if (col_count_r == 0)
-            strcpy(andrawdata.typemeas, col);
-        if (col_count_r == 1)
-            andrawdata.utcTimeMillis = atoll(col);
-        if (col_count_r == 2)
-            andrawdata.TimeNanos = atoll(col);
-        if (col_count_r == 3)
-            andrawdata.FullBiasNanos = atoll(col);
-        if (col_count_r == 4)
-            sscanf(col, "%lf", &andrawdata.BiasNanos);
-        if (col_count_r == 7)
-            andrawdata.Svid = atoi(col);
-        if (col_count_r == 8)
-            andrawdata.TimeOffsetNanos = atoi(col);
-        if (col_count_r == 9)
-            andrawdata.State = atoi(col);
-        if (col_count_r == 20)
-            andrawdata.ConstellationType = atoi(col);
-        if (col_count_r == 10)
-            andrawdata.ReceivedSvTimeNanos = atoll(col);
-        if (col_count_r == 12)
-            sscanf(col, "%lf", &andrawdata.Cn0);
-        if (col_count_r == 13)
-            sscanf(col, "%lf", &andrawdata.PseudorangeRateMetersPerSecond);
-        if (col_count_r == 16)
-            sscanf(col, "%lf", &andrawdata.AccumulatedDeltaRange);
-        if (col_count_r == 15)
-            andrawdata.ADRState = atoi(col);
-        if (col_count_r == 18)
-            sscanf(col, "%lf", &andrawdata.CarrierFrequencyHz);
-
-        col = strtok(NULL, ","); //update field value
-        col_count_r++;
-
-    }
 
 	char* sat;
 	char* code;
 	float psdrgBias = 0;
 	double psdrange,cphase,doppler;
 
-	sat = getSatID(andrawdata);
+	//sat = getSatID(andrawdata);
 
-	code = get_obs_code(andrawdata);
+	//code = get_obs_code(andrawdata);
 
-	psdrange = computePseudorange(andrawdata, psdrgBias);
+	//psdrange = computePseudorange(andrawdata, psdrgBias);
 
-	cphase = computeCarrierPhase(andrawdata);
+	//cphase = computeCarrierPhase(andrawdata);
 
-	doppler = computeDoppler(andrawdata);
+	//doppler = computeDoppler(andrawdata);
 
-	printf("GTER DEBUG GNSS ANDROID: %s, %s", sat, code);
+	//printf("GTER DEBUG GNSS ANDROID: %s, %s", sat, code);
 
 
 
