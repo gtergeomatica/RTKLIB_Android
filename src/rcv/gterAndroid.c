@@ -316,7 +316,7 @@ double get_frequency(androidgnssmeas gnssdata)
 	return freq;
 }
 
-void check_trck_state(androidgnssmeas gnssdata)
+void check_trck_state(androidgnssmeas gnssdata, double* pseudorange)
 {
 	double freq = get_frequency(gnssdata);
 	
@@ -324,34 +324,66 @@ void check_trck_state(androidgnssmeas gnssdata)
 
 	if (gnssdata.ConstellationType == 1 || gnssdata.ConstellationType == 2 || gnssdata.ConstellationType == 4 || gnssdata.ConstellationType == 5)
 	{
-		if ((gnssdata.State & STATE_CODE_LOCK) == 0)
+		if ((gnssdata.State & STATE_CODE_LOCK) == 0) {
 			printf("State %i, hase STATE CODE LOCK not valid\n", gnssdata.State);
-		else if ((gnssdata.State & STATE_TOW_DECODED) == 0)
+			*pseudorange = 0.0;
+		}
+		else if ((gnssdata.State & STATE_TOW_DECODED) == 0) {
 			printf("State %i, has  STATE TOW DECODED not valid\n", gnssdata.State);
-		else if ((gnssdata.State & STATE_MSEC_AMBIGUOUS) != 0)
+			*pseudorange = 0.0;
+		}
+		else if ((gnssdata.State & STATE_MSEC_AMBIGUOUS) != 0) {
 			printf("State %i, has  STATE_MSEC_AMBIGUOUS not valid\n", gnssdata.State);
+			//*pseudorange = 0.0;
+		}
+		else {
+			printf("Valid trck state\n");
+			*pseudorange = 1.0; //qualsiasi valore != 0;
+		}
+			
 	}
 	else if (gnssdata.ConstellationType == 3)
 	{
-		if ((gnssdata.State & STATE_CODE_LOCK) == 0)
+		if ((gnssdata.State & STATE_CODE_LOCK) == 0) {
 			printf("State %i, has STATE CODE LOCK not valid\n", gnssdata.State);
-		else if ((gnssdata.State & STATE_GLO_TOD_DECODED) == 0)
+			*pseudorange = 0.0;
+		}
+		else if ((gnssdata.State & STATE_GLO_TOD_DECODED) == 0) {
 			printf("State %i, has STATE_GLO_TOD_DECODED not valid\n", gnssdata.State);
-		else if ((gnssdata.State & STATE_MSEC_AMBIGUOUS) != 0)
+			*pseudorange = 0.0;
+		}
+		else if ((gnssdata.State & STATE_MSEC_AMBIGUOUS) != 0) {
 			printf("State %i, has  STATE_MSEC_AMBIGUOUS not valid\n", gnssdata.State);
+			//*pseudorange = 0.0;
+		}
+		else {
+			printf("Valid trck state\n");
+			*pseudorange = 1.0;
+		}
+			
 	}
 	else if (gnssdata.ConstellationType == 6)
 	{
 		if (freq_band == 1)
 		{
-			if ((gnssdata.State & STATE_GAL_E1BC_CODE_LOCK) == 0)
+			if ((gnssdata.State & STATE_GAL_E1BC_CODE_LOCK) == 0) {
 				printf("State %i, has STATE GAL E1BC CODE LOCK not valid\n", gnssdata.State);
+			}
 			else if ((gnssdata.State & STATE_GAL_E1C_2ND_CODE_LOCK) == 0) //State value indicates presence of E1B code
 			{
-				if ((gnssdata.State & STATE_TOW_DECODED) == 0)
+				if ((gnssdata.State & STATE_TOW_DECODED) == 0) {
 					printf("State %i, has  STATE TOW DECODED not valid\n", gnssdata.State);
-				else if ((gnssdata.State & STATE_MSEC_AMBIGUOUS) != 0)
+					*pseudorange = 0.0;
+				}
+				else if ((gnssdata.State & STATE_MSEC_AMBIGUOUS) != 0) {
 					printf("State %i, has  STATE_MSEC_AMBIGUOUS not valid\n", gnssdata.State);
+					//*pseudorange = 0.0;
+				}
+				else {
+					printf("Valid trck state\n");
+					*pseudorange = 1.0;
+				}
+					
 			}
 			else //State value indicates presence of E1C code
 			{
@@ -359,22 +391,28 @@ void check_trck_state(androidgnssmeas gnssdata)
 					printf("State %i, has STATE_GAL_E1C_2ND_CODE_LOCK not valid\n", gnssdata.State);
 				else if ((gnssdata.State & STATE_MSEC_AMBIGUOUS) != 0)
 					printf("State %i, has  STATE_MSEC_AMBIGUOUS not valid\n", gnssdata.State);
+				else
+					printf("Valid trck state\n");
 			}
 		}
 		else if (freq_band == 5)
 		{
 			if ((gnssdata.State & STATE_CODE_LOCK) == 0)
 				printf("State %i, has STATE CODE LOCK not valid\n", gnssdata.State);
-			else if ((gnssdata.State & STATE_GLO_TOD_DECODED) == 0)
+			else if ((gnssdata.State & STATE_GLO_TOD_DECODED) == 0) {
 				printf("State %i, has STATE_GLO_TOD_DECODED not valid\n", gnssdata.State);
+				*pseudorange = 0.0;
+			}
+				
 			else if ((gnssdata.State & STATE_MSEC_AMBIGUOUS) != 0)
 				printf("State %i, has  STATE_MSEC_AMBIGUOUS not valid\n", gnssdata.State);
+			else
+				printf("Valid trck state\n");
 		}
 
 	}
 	else
 		printf("Constellation Type %i, is invalid or not implemented\n", gnssdata.ConstellationType);
-
 }
 
 double computePseudorange(androidgnssmeas gnssdata, float psdrgBias, int* gpsweek, double* gpssow)
@@ -406,40 +444,41 @@ double computePseudorange(androidgnssmeas gnssdata, float psdrgBias, int* gpswee
 	//compute satellite emission time
 
 	//check trck status
-	//check_trck_state(gnssdata);
+	check_trck_state(gnssdata, &psrange);
 
-	//split cases depending on different constellations
-	if (gnssdata.ConstellationType == 2)
-	{
-		printf("ERROR: Pseudorange computation not supported for SBAS\n");
-		return -1;
-	}
-	else if (gnssdata.ConstellationType == 3)
-	{
-		//GLONASS
-		Tod_secs = gnssdata.ReceivedSvTimeNanos * NS_TO_S;
-		T_Tx_seconds = glot_to_gpst(gpst_epoch, Tod_secs);
-	}
-	else if (gnssdata.ConstellationType == 5)
-	{
-		//BEIDOU
-		T_Tx_seconds = gnssdata.ReceivedSvTimeNanos * NS_TO_S + BDST_TO_GPST;
+	if (psrange == 0.0)
+		return psrange;
 
-	}
-	else if (gnssdata.ConstellationType == 1 || gnssdata.ConstellationType == 6)
-	{
-		//GPS and GALILEO
-		T_Tx_seconds = gnssdata.ReceivedSvTimeNanos * NS_TO_S;
-	}
-	else
-	{
-		printf("Case not implemented\n");
-		return -1;
-	}
+	else {
+		//split cases depending on different constellations
+		if (gnssdata.ConstellationType == 2){
+			printf("ERROR: Pseudorange computation not supported for SBAS\n");
+			return -1;
+			}
+		else if (gnssdata.ConstellationType == 3){
+			//GLONASS
+			Tod_secs = gnssdata.ReceivedSvTimeNanos * NS_TO_S;
+			T_Tx_seconds = glot_to_gpst(gpst_epoch, Tod_secs);
+		}
+		else if (gnssdata.ConstellationType == 5){
+			//BEIDOU
+			T_Tx_seconds = gnssdata.ReceivedSvTimeNanos * NS_TO_S + BDST_TO_GPST;
 
-	tau = check_week_crossover(T_Rx_seconds, T_Tx_seconds);
-	psrange = tau * SPEED_OF_LIGHT;
-	return psrange;
+		}
+		else if (gnssdata.ConstellationType == 1 || gnssdata.ConstellationType == 6){
+			//GPS and GALILEO
+			T_Tx_seconds = gnssdata.ReceivedSvTimeNanos * NS_TO_S;
+		}
+		else {
+			printf("Case not implemented\n");
+			psrange = 0.0;
+			return psrange;
+		}
+
+		tau = check_week_crossover(T_Rx_seconds, T_Tx_seconds);
+		psrange = tau * SPEED_OF_LIGHT;
+		return psrange;
+	}
 }
 
 double computeCarrierPhase(androidgnssmeas gnssdata) {
@@ -501,7 +540,7 @@ int andcode2rtklibcode(char* andcode) {
 
 static int decode_gterAndroid(raw_t* raw)
 {
-    // code here to decode android message
+    // code to decode android message
 
 	const char delimiters[] = ",";
 	char* running;
@@ -526,7 +565,6 @@ static int decode_gterAndroid(raw_t* raw)
 	}
 
 	//read values in every Raw meas 
-	//androidgnssmeas* andrawdata = malloc(sizeof(androidgnssmeas)*nmeas);
 	androidgnssmeas andrawdata;
 	for (int n = 0; n < nmeas; n++) {
 
@@ -575,7 +613,6 @@ static int decode_gterAndroid(raw_t* raw)
 		psdrange = computePseudorange(andrawdata, psdrgBias,&week,&sow);
 		cphase = computeCarrierPhase(andrawdata);
 		doppler = computeDoppler(andrawdata);
-
 
 		//fill rtklib obs structure
 
