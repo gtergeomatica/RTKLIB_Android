@@ -203,43 +203,41 @@ double glot_to_gpst(time_t gpst_current_epoch, double tod_seconds)
 
 }
 
-const char* get_constellation(androidgnssmeas gnssdata) {
-	char constellation[10] = "A";
+char get_constellation(androidgnssmeas gnssdata) {
+	
 
 	if (gnssdata.ConstellationType == 1) {
-		strcpy(constellation, "G");
-		return constellation;
+		return 'G';
 	}
 	else if (gnssdata.ConstellationType == 2) {
-		strcpy(constellation, "S");
-		return constellation;
+		return 'S';
 	}
 	else if (gnssdata.ConstellationType == 3) {
-		strcpy(constellation, "R");
-		return constellation;
+		return 'R';
 	}
 	else if (gnssdata.ConstellationType == 4) {
-		strcpy(constellation, "J");
-		return constellation;
+		return 'J';
 	}
 	else if (gnssdata.ConstellationType == 5) {
-		strcpy(constellation, "C");
-		return constellation;
+
+		return 'C';
 	}
 	else if (gnssdata.ConstellationType == 6) {
-		strcpy(constellation, "E");
-		return constellation;
+
+		return 'E';
 	}
 	else if (gnssdata.ConstellationType == 7) {
-		strcpy(constellation, "I");
-		return constellation;
+
+		return 'I';
 	}
+	else
+		return 'A'; //unknown constellation
 
 }
 
 const void getSatID(androidgnssmeas gnssdata, char* satID) {
 
-	sprintf(satID, "%s%02d", get_constellation(gnssdata), gnssdata.Svid);
+	sprintf(satID, "%c%02d", get_constellation(gnssdata), gnssdata.Svid);
 
 }
 
@@ -257,8 +255,8 @@ int get_rnx_band_from_freq(double frequency)
 		//else
 		return 2; //L5
 	}
-	else if (iifreq == 153) { //BDS B1I (153)
-		return 1; 
+	else if (iifreq == 152) { //BDS B1I (153)
+		return 0; //1 sarebbe seconda freq mentre questa e la 1a freq del beidou 
 	}
 	else {
 		printf("Invalid frequency detected\n");
@@ -275,15 +273,16 @@ const void get_rnx_attr(int band, char constellation, int state, char* attr)
 		if ((state & STATE_GAL_E1C_2ND_CODE_LOCK == 0) && (state & STATE_GAL_E1B_PAGE_SYNC != 0))
 		{
 			strcpy(attr, "1B");
-		}
+		}else
+			strcpy(attr, "1C");
 	}
 	else if (band == 0) {
 		strcpy(attr, "1C");
 	}
 	else if (band == 2) {
-		strcpy(attr, "5Q");
+		strcpy(attr, "5Q"); //oppure 5X... da capire!
 	}
-	else if (band == 1 && constellation == 'C') {
+	else if (band == 0 && constellation == 'C') { //band ==0 e non ==1
 		strcpy(attr, "2I");
 	}
 }
@@ -292,10 +291,9 @@ void get_obs_code(androidgnssmeas gnssdata, char* obscode)
 {
 	int band, freq;
 	char constellation[2] = "A";
-	
 	char* attr = malloc(sizeof(char) * 3);
 	//char obscode[10] = "C";
-	strcpy(constellation, get_constellation(gnssdata));
+	constellation[0]=get_constellation(gnssdata);
 	freq = gnssdata.CarrierFrequencyHz;
 	band = get_rnx_band_from_freq(freq);
 	get_rnx_attr(band, constellation[0], gnssdata.State,attr);
@@ -324,40 +322,40 @@ void check_trck_state(androidgnssmeas gnssdata, double* pseudorange)
 
 	if (gnssdata.ConstellationType == 1 || gnssdata.ConstellationType == 2 || gnssdata.ConstellationType == 4 || gnssdata.ConstellationType == 5)
 	{
-		if ((gnssdata.State & STATE_CODE_LOCK) == 0) {
-			printf("State %i, hase STATE CODE LOCK not valid\n", gnssdata.State);
-			*pseudorange = 0.0;
-		}
-		else if ((gnssdata.State & STATE_TOW_DECODED) == 0) {
+		//if ((gnssdata.State & STATE_CODE_LOCK) == 0) {
+			//printf("State %i, hase STATE CODE LOCK not valid\n", gnssdata.State);
+			//*pseudorange = 0.0;
+		//}
+		if ((gnssdata.State & STATE_TOW_DECODED) == 0) {
 			printf("State %i, has  STATE TOW DECODED not valid\n", gnssdata.State);
 			*pseudorange = 0.0;
 		}
-		else if ((gnssdata.State & STATE_MSEC_AMBIGUOUS) != 0) {
-			printf("State %i, has  STATE_MSEC_AMBIGUOUS not valid\n", gnssdata.State);
+		//else if ((gnssdata.State & STATE_MSEC_AMBIGUOUS) != 0) {
+			//printf("State %i, has  STATE_MSEC_AMBIGUOUS not valid\n", gnssdata.State);
 			//*pseudorange = 0.0;
-		}
+		//}
 		else {
-			printf("Valid trck state\n");
+			//printf("Valid trck state\n");
 			*pseudorange = 1.0; //qualsiasi valore != 0;
 		}
 			
 	}
 	else if (gnssdata.ConstellationType == 3)
 	{
-		if ((gnssdata.State & STATE_CODE_LOCK) == 0) {
-			printf("State %i, has STATE CODE LOCK not valid\n", gnssdata.State);
-			*pseudorange = 0.0;
-		}
-		else if ((gnssdata.State & STATE_GLO_TOD_DECODED) == 0) {
+		//if ((gnssdata.State & STATE_CODE_LOCK) == 0) {
+			//printf("State %i, has STATE CODE LOCK not valid\n", gnssdata.State);
+			//*pseudorange = 0.0;
+		//}
+		if ((gnssdata.State & STATE_GLO_TOD_DECODED) == 0) {
 			printf("State %i, has STATE_GLO_TOD_DECODED not valid\n", gnssdata.State);
 			*pseudorange = 0.0;
 		}
-		else if ((gnssdata.State & STATE_MSEC_AMBIGUOUS) != 0) {
-			printf("State %i, has  STATE_MSEC_AMBIGUOUS not valid\n", gnssdata.State);
+		//else if ((gnssdata.State & STATE_MSEC_AMBIGUOUS) != 0) {
+			//printf("State %i, has  STATE_MSEC_AMBIGUOUS not valid\n", gnssdata.State);
 			//*pseudorange = 0.0;
-		}
+		//}
 		else {
-			printf("Valid trck state\n");
+			//printf("Valid trck state\n");
 			*pseudorange = 1.0;
 		}
 			
@@ -366,48 +364,66 @@ void check_trck_state(androidgnssmeas gnssdata, double* pseudorange)
 	{
 		if (freq_band == 1)
 		{
-			if ((gnssdata.State & STATE_GAL_E1BC_CODE_LOCK) == 0) {
-				printf("State %i, has STATE GAL E1BC CODE LOCK not valid\n", gnssdata.State);
+
+			if ((gnssdata.State & STATE_GAL_E1C_2ND_CODE_LOCK) == 0) {
+				//printf("State %i, has STATE_GAL_E1C_2ND_CODE_LOCK not valid --> Code 1B not to use\n", gnssdata.State);
+				*pseudorange = 0.0;
 			}
-			else if ((gnssdata.State & STATE_GAL_E1C_2ND_CODE_LOCK) == 0) //State value indicates presence of E1B code
-			{
-				if ((gnssdata.State & STATE_TOW_DECODED) == 0) {
-					printf("State %i, has  STATE TOW DECODED not valid\n", gnssdata.State);
-					*pseudorange = 0.0;
-				}
-				else if ((gnssdata.State & STATE_MSEC_AMBIGUOUS) != 0) {
-					printf("State %i, has  STATE_MSEC_AMBIGUOUS not valid\n", gnssdata.State);
-					//*pseudorange = 0.0;
-				}
-				else {
-					printf("Valid trck state\n");
-					*pseudorange = 1.0;
-				}
-					
+			else if ((gnssdata.State & STATE_TOW_DECODED) == 0) {
+				printf("State %i, has  STATE TOW DECODED not valid\n", gnssdata.State);
+				*pseudorange = 0.0;
+				
+			}else{
+				//printf("Valid trck state\n");
+				*pseudorange = 1.0;
 			}
-			else //State value indicates presence of E1C code
-			{
-				if ((gnssdata.State & STATE_GAL_E1C_2ND_CODE_LOCK) == 0)
-					printf("State %i, has STATE_GAL_E1C_2ND_CODE_LOCK not valid\n", gnssdata.State);
-				else if ((gnssdata.State & STATE_MSEC_AMBIGUOUS) != 0)
-					printf("State %i, has  STATE_MSEC_AMBIGUOUS not valid\n", gnssdata.State);
-				else
-					printf("Valid trck state\n");
-			}
+
+			//if ((gnssdata.State & STATE_GAL_E1BC_CODE_LOCK) == 0) {
+			//	printf("State %i, has STATE GAL E1BC CODE LOCK not valid\n", gnssdata.State);
+			//	//*pseudorange=0.0;
+			//}
+			//else if ((gnssdata.State & STATE_GAL_E1C_2ND_CODE_LOCK) == 0) //State value indicates presence of E1B code
+			//{
+			//	if ((gnssdata.State & STATE_TOW_DECODED) == 0) {
+			//		printf("State %i, has  STATE TOW DECODED not valid\n", gnssdata.State);
+			//		*pseudorange = 0.0;
+			//	}
+			//	else if ((gnssdata.State & STATE_MSEC_AMBIGUOUS) != 0) {
+			//		printf("State %i, has  STATE_MSEC_AMBIGUOUS not valid\n", gnssdata.State);
+			//		//*pseudorange = 0.0;
+			//	}
+			//	else {
+			//		printf("Valid trck state\n");
+			//		*pseudorange = 1.0;
+			//	}
+			//		
+			//}
+			//else //State value indicates presence of E1C code
+			//{
+			//	if ((gnssdata.State & STATE_GAL_E1C_2ND_CODE_LOCK) == 0)
+			//		printf("State %i, has STATE_GAL_E1C_2ND_CODE_LOCK not valid\n", gnssdata.State);
+			//	else if ((gnssdata.State & STATE_MSEC_AMBIGUOUS) != 0)
+			//		printf("State %i, has  STATE_MSEC_AMBIGUOUS not valid\n", gnssdata.State);
+			//	else
+			//		printf("Valid trck state\n");
+			//}
 		}
 		else if (freq_band == 5)
 		{
-			if ((gnssdata.State & STATE_CODE_LOCK) == 0)
-				printf("State %i, has STATE CODE LOCK not valid\n", gnssdata.State);
-			else if ((gnssdata.State & STATE_GLO_TOD_DECODED) == 0) {
+			//if ((gnssdata.State & STATE_CODE_LOCK) == 0)
+				//printf("State %i, has STATE CODE LOCK not valid\n", gnssdata.State);
+			if ((gnssdata.State & STATE_GLO_TOD_DECODED) == 0) {
 				printf("State %i, has STATE_GLO_TOD_DECODED not valid\n", gnssdata.State);
 				*pseudorange = 0.0;
 			}
+
+			//else if ((gnssdata.State & STATE_MSEC_AMBIGUOUS) != 0)
+				//printf("State %i, has  STATE_MSEC_AMBIGUOUS not valid\n", gnssdata.State);
+			else {
+				//printf("Valid trck state\n");
+				*pseudorange = 1.0;
+			}
 				
-			else if ((gnssdata.State & STATE_MSEC_AMBIGUOUS) != 0)
-				printf("State %i, has  STATE_MSEC_AMBIGUOUS not valid\n", gnssdata.State);
-			else
-				printf("Valid trck state\n");
 		}
 
 	}
@@ -486,7 +502,7 @@ double computeCarrierPhase(androidgnssmeas gnssdata) {
 	double cphase, wavelength;
 	wavelength = SPEED_OF_LIGHT / get_frequency(gnssdata);
 	if ((gnssdata.ADRState & ADR_STATE_VALID) == 0) {
-		printf("ADR STATE not Valid --> cphase = 0.0 \n");
+		//printf("ADR STATE not Valid --> cphase = 0.0 \n");
 		cphase = 0.0;
 		return cphase;
 	}
@@ -526,13 +542,13 @@ char* mystrsep(char** stringp, const char* delim)
 
 int andcode2rtklibcode(char* andcode) {
 
-	if ((andcode[1] == '0') & (andcode[2] == 'C'))
+	if ((andcode[1] == '1') & (andcode[2] == 'C'))
 		return CODE_L1C;
-	else if ((andcode[1] == '0') & (andcode[2] == 'B'))
+	else if ((andcode[1] == '1') & (andcode[2] == 'B'))
 		return CODE_L1B;
-	else if ((andcode[1] == '2') & (andcode[2] == 'Q'))
+	else if ((andcode[1] == '5') & (andcode[2] == 'Q')) //oppure X da capire
 		return CODE_L5Q;
-	else if ((andcode[1] == '1') & (andcode[2] == 'I'))
+	else if ((andcode[1] == '2') & (andcode[2] == 'I'))
 		return CODE_L2I;
 	else
 		return CODE_NONE;
@@ -638,7 +654,8 @@ static int decode_gterAndroid(raw_t* raw)
 
 	free(sat);
 	free(code);
-	return 0;
+	raw->obs.n = nobs> 0 ? nobs - 1 : 0;
+	return 1;
 }
 
 extern int input_gterAndroid(raw_t* raw, uint8_t data)
@@ -666,11 +683,11 @@ extern int input_gterAndroid(raw_t* raw, uint8_t data)
 
     if (raw->buff[raw->nbyte - 1] != '\n')
         return 0;
-    else if (raw->nbyte == 570 & raw->buff[568] == 'b') {
+    //else if (raw->nbyte == 570 & raw->buff[568] == 'b') {
 
-        raw->nbyte = 0;
-        return -1;
-    }
+        //raw->nbyte = 0;
+        //return -1;
+    //}
     raw->nbyte = 0;
     /* decode ublox raw message */
     return decode_gterAndroid(raw);

@@ -1424,7 +1424,7 @@ extern int input_raw(raw_t *raw, int format, uint8_t data)
         case STRFMT_BINEX : return input_bnx   (raw,data);
         case STRFMT_RT17  : return input_rt17  (raw,data);
         case STRFMT_SEPT  : return input_sbf   (raw,data);
-        case STRFMT_GTAND : return input_gterAndroid(raw, data);
+        case STRFMT_GTAND : return input_gterAndroid (raw, data);
     }
     return 0;
 }

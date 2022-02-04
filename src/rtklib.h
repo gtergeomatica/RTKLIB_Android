@@ -432,8 +432,8 @@ extern "C" {
 #define STR_TCPSVR   3                  /* stream type: TCP server */
 #define STR_TCPCLI   4                  /* stream type: TCP client */
 #define STR_NTRIPSVR 5                  /* stream type: NTRIP server */
-#define STR_NTRIPCLI 6                  /* stream type: NTRIP client */
-#define STR_FTP      7                  /* stream type: ftp */
+#define STR_NTRIPCLI 7                  /* stream type: NTRIP client */
+#define STR_FTP      6                  /* stream type: ftp */
 #define STR_HTTP     8                  /* stream type: http */
 #define STR_NTRIPCAS 9                  /* stream type: NTRIP caster */
 #define STR_UDPSVR   10                 /* stream type: UDP server */
