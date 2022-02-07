@@ -237,6 +237,12 @@ char get_constellation(androidgnssmeas gnssdata) {
 
 const void getSatID(androidgnssmeas gnssdata, char* satID) {
 
+	if (gnssdata.Svid > 99)
+	{
+		int a = 0;
+	}
+		
+
 	sprintf(satID, "%c%02d", get_constellation(gnssdata), gnssdata.Svid);
 
 }
@@ -270,20 +276,20 @@ const void get_rnx_attr(int band, char constellation, int state, char* attr)
 	
 	//Make distinction between GAL E1Cand E1B code
 	if (band == 0 && constellation == 'E') {
-		if ((state & STATE_GAL_E1C_2ND_CODE_LOCK == 0) && (state & STATE_GAL_E1B_PAGE_SYNC != 0))
+		if ((state & STATE_GAL_E1C_2ND_CODE_LOCK) == 0 && (state & STATE_GAL_E1B_PAGE_SYNC) != 0)
 		{
-			strcpy(attr, "1B");
+			sprintf(attr, "1B");
 		}else
-			strcpy(attr, "1C");
+			sprintf(attr, "1C");
 	}
 	else if (band == 0) {
-		strcpy(attr, "1C");
+		sprintf(attr, "1C");
 	}
 	else if (band == 2) {
-		strcpy(attr, "5Q"); //oppure 5X... da capire!
+		sprintf(attr, "5Q"); //oppure 5X... da capire!
 	}
 	else if (band == 0 && constellation == 'C') { //band ==0 e non ==1
-		strcpy(attr, "2I");
+		sprintf(attr, "2I");
 	}
 }
 
@@ -412,8 +418,8 @@ void check_trck_state(androidgnssmeas gnssdata, double* pseudorange)
 		{
 			//if ((gnssdata.State & STATE_CODE_LOCK) == 0)
 				//printf("State %i, has STATE CODE LOCK not valid\n", gnssdata.State);
-			if ((gnssdata.State & STATE_GLO_TOD_DECODED) == 0) {
-				printf("State %i, has STATE_GLO_TOD_DECODED not valid\n", gnssdata.State);
+			if ((gnssdata.State & STATE_TOW_DECODED) == 0) {
+				printf("State %i, has STATE_TOW_DECODED not valid\n", gnssdata.State);
 				*pseudorange = 0.0;
 			}
 
@@ -563,13 +569,13 @@ static int decode_gterAndroid(raw_t* raw)
 	char* currstrval; //current field read in the str	
 	int ncolmeas = 30; //number of fields for single measurement
 	int nmeas;
-	char* sat=malloc(sizeof(char)*4);
+	char* sat=malloc(sizeof(char)*5);
 	char* code= malloc(sizeof(char) * 4);
 	float psdrgBias = 0;
 	double psdrange, cphase, doppler, sow;
 	int t, nobs = 0, week;
-	sat[0] = '\0';
-	code[0] = '\0';
+	//sat[0] = '\0';
+	//code[0] = '\0';
 
 	running = raw->buff;
 

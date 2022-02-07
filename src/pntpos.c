@@ -498,7 +498,7 @@ static int raim_fde(const obsd_t *obs, int n, const double *rs,
         sat=obs[i].sat;
         rms=rms_e;
         vsat[i]=0;
-        strcpy(msg,msg_e);
+        //strcpy(msg,msg_e);
     }
     if (stat) {
         time2str(obs[0].time,tstr,2); satno2id(sat,name);
