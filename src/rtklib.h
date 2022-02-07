@@ -1015,6 +1015,8 @@ typedef struct {        /* processing options type */
     double odisp[2][6*11]; /* ocean tide loading parameters {rov,base} */
     int  freqopt;       /* disable L2-AR */
     char pppopt[256];   /* ppp option */
+
+    double maxadru;     /*Max ADR uncertainty [m] accepted */
 } prcopt_t;
 
 typedef struct {        /* solution options type */

@@ -252,7 +252,7 @@ static int rescode(int iter, const obsd_t *obs, int n, const double *rs,
     double r,freq,dion,dtrp,vmeas,vion,vtrp,rr[3],pos[3],dtr,e[3],P;
     int i,j,nv=0,sat,sys,mask[NX-3]={0};
     
-    //initialise dion, dtrp,vion,vtrp to prevent errors when iter=0
+    //LB: initialise dion, dtrp,vion,vtrp to prevent errors (caused by non initialization) when iter=0
     dion=dtrp=vion=vtrp= 0.0;
 
     trace(3,"resprng : n=%d\n",n);
@@ -498,7 +498,7 @@ static int raim_fde(const obsd_t *obs, int n, const double *rs,
         sat=obs[i].sat;
         rms=rms_e;
         vsat[i]=0;
-        strcpy(msg,msg_e);
+        //strcpy(msg,msg_e); //LB:causes problems 
     }
     if (stat) {
         time2str(obs[0].time,tstr,2); satno2id(sat,name);

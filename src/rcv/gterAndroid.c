@@ -40,6 +40,7 @@ typedef struct {
     int ConstellationType;
     long long int ReceivedSvTimeNanos;
     double AccumulatedDeltaRange;
+	double ADRUncertaintymeters;
     double Cn0;
     double CarrierFrequencyHz;
     int ADRState;
@@ -347,7 +348,7 @@ void check_trck_state(androidgnssmeas gnssdata, double* pseudorange)
 			//*pseudorange = 0.0;
 		//}
 		if ((gnssdata.State & STATE_GLO_TOD_DECODED) == 0) {
-			printf("State %i, has STATE_GLO_TOD_DECODED not valid\n", gnssdata.State);
+			//printf("State %i, has STATE_GLO_TOD_DECODED not valid\n", gnssdata.State);
 			*pseudorange = 0.0;
 		}
 		//else if ((gnssdata.State & STATE_MSEC_AMBIGUOUS) != 0) {
@@ -378,47 +379,16 @@ void check_trck_state(androidgnssmeas gnssdata, double* pseudorange)
 				*pseudorange = 1.0;
 			}
 
-			//if ((gnssdata.State & STATE_GAL_E1BC_CODE_LOCK) == 0) {
-			//	printf("State %i, has STATE GAL E1BC CODE LOCK not valid\n", gnssdata.State);
-			//	//*pseudorange=0.0;
-			//}
-			//else if ((gnssdata.State & STATE_GAL_E1C_2ND_CODE_LOCK) == 0) //State value indicates presence of E1B code
-			//{
-			//	if ((gnssdata.State & STATE_TOW_DECODED) == 0) {
-			//		printf("State %i, has  STATE TOW DECODED not valid\n", gnssdata.State);
-			//		*pseudorange = 0.0;
-			//	}
-			//	else if ((gnssdata.State & STATE_MSEC_AMBIGUOUS) != 0) {
-			//		printf("State %i, has  STATE_MSEC_AMBIGUOUS not valid\n", gnssdata.State);
-			//		//*pseudorange = 0.0;
-			//	}
-			//	else {
-			//		printf("Valid trck state\n");
-			//		*pseudorange = 1.0;
-			//	}
-			//		
-			//}
-			//else //State value indicates presence of E1C code
-			//{
-			//	if ((gnssdata.State & STATE_GAL_E1C_2ND_CODE_LOCK) == 0)
-			//		printf("State %i, has STATE_GAL_E1C_2ND_CODE_LOCK not valid\n", gnssdata.State);
-			//	else if ((gnssdata.State & STATE_MSEC_AMBIGUOUS) != 0)
-			//		printf("State %i, has  STATE_MSEC_AMBIGUOUS not valid\n", gnssdata.State);
-			//	else
-			//		printf("Valid trck state\n");
-			//}
 		}
 		else if (freq_band == 5)
 		{
 			//if ((gnssdata.State & STATE_CODE_LOCK) == 0)
 				//printf("State %i, has STATE CODE LOCK not valid\n", gnssdata.State);
-			if ((gnssdata.State & STATE_GLO_TOD_DECODED) == 0) {
-				printf("State %i, has STATE_GLO_TOD_DECODED not valid\n", gnssdata.State);
+			if ((gnssdata.State & STATE_TOW_DECODED) == 0) {
+				printf("State %i, has  STATE TOW DECODED not valid\n", gnssdata.State);
 				*pseudorange = 0.0;
 			}
 
-			//else if ((gnssdata.State & STATE_MSEC_AMBIGUOUS) != 0)
-				//printf("State %i, has  STATE_MSEC_AMBIGUOUS not valid\n", gnssdata.State);
 			else {
 				//printf("Valid trck state\n");
 				*pseudorange = 1.0;
@@ -506,7 +476,11 @@ double computeCarrierPhase(androidgnssmeas gnssdata) {
 		cphase = 0.0;
 		return cphase;
 	}
-
+	else if (gnssdata.ADRUncertaintymeters > 5) {
+		printf("ADR discarted for sat, as exceeds the threshold value.\n");
+		cphase = 0.0;
+	}
+		
 	cphase = gnssdata.AccumulatedDeltaRange / wavelength;
 
 	return cphase;
@@ -563,7 +537,7 @@ static int decode_gterAndroid(raw_t* raw)
 	char* currstrval; //current field read in the str	
 	int ncolmeas = 30; //number of fields for single measurement
 	int nmeas;
-	char* sat=malloc(sizeof(char)*4);
+	char* sat=malloc(sizeof(char)*5);
 	char* code= malloc(sizeof(char) * 4);
 	float psdrgBias = 0;
 	double psdrange, cphase, doppler, sow;
@@ -612,6 +586,8 @@ static int decode_gterAndroid(raw_t* raw)
 				andrawdata.ADRState = atoi(currstrval);
 			else if (j == 20)
 				sscanf(currstrval, "%lf", &andrawdata.AccumulatedDeltaRange);
+			else if (j==21)
+				sscanf(currstrval, "%lf", &andrawdata.ADRUncertaintymeters);
 			else if (j == 22)
 				sscanf(currstrval, "%lf", &andrawdata.CarrierFrequencyHz);
 			else if (j == 28)
@@ -629,7 +605,8 @@ static int decode_gterAndroid(raw_t* raw)
 		psdrange = computePseudorange(andrawdata, psdrgBias,&week,&sow);
 		cphase = computeCarrierPhase(andrawdata);
 		doppler = computeDoppler(andrawdata);
-
+		
+		
 		//fill rtklib obs structure
 
 		raw->time=gpst2time(week, sow);
