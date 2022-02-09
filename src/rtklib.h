@@ -1171,6 +1171,7 @@ typedef struct {        /* receiver raw data control type */
     char opt[256];      /* receiver dependent options */
     int format;         /* receiver stream format */
     void *rcv_data;     /* receiver dependent data */
+    double maxadru;     /*LB: max uncertainty accepted on carrierphase meas from android devices*/
 } raw_t;
 
 typedef struct {        /* stream type */

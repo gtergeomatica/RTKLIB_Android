@@ -467,7 +467,7 @@ double computePseudorange(androidgnssmeas gnssdata, float psdrgBias, int* gpswee
 	}
 }
 
-double computeCarrierPhase(androidgnssmeas gnssdata) {
+double computeCarrierPhase(androidgnssmeas gnssdata, raw_t* raw) {
 
 	double cphase, wavelength;
 	wavelength = SPEED_OF_LIGHT / get_frequency(gnssdata);
@@ -476,7 +476,7 @@ double computeCarrierPhase(androidgnssmeas gnssdata) {
 		cphase = 0.0;
 		return cphase;
 	}
-	else if (gnssdata.ADRUncertaintymeters > 5) {
+	else if (gnssdata.ADRUncertaintymeters > raw->maxadru) {
 		printf("ADR discarted for sat, as exceeds the threshold value.\n");
 		cphase = 0.0;
 	}
@@ -603,7 +603,7 @@ static int decode_gterAndroid(raw_t* raw)
 		int f = get_rnx_band_from_freq(andrawdata.CarrierFrequencyHz);
 
 		psdrange = computePseudorange(andrawdata, psdrgBias,&week,&sow);
-		cphase = computeCarrierPhase(andrawdata);
+		cphase = computeCarrierPhase(andrawdata,raw);
 		doppler = computeDoppler(andrawdata);
 		
 		

@@ -746,6 +746,8 @@ extern int rtksvrinit(rtksvr_t *svr)
             return 0;
         }
     }
+
+
     for (i=0;i<3;i++) {
         memset(svr->raw +i,0,sizeof(raw_t ));
         memset(svr->rtcm+i,0,sizeof(rtcm_t));
@@ -856,6 +858,8 @@ extern int rtksvrstart(rtksvr_t *svr, int cycle, int buffsize, int *strs,
     svr->nsbs=0;
     svr->nsol=0;
     svr->prcout=0;
+    /*LB: saving maxadru value into raw structure*/
+    for(i=0;i<3;i++) svr->raw[i].maxadru = prcopt->maxadru;
     rtkfree(&svr->rtk);
     rtkinit(&svr->rtk,prcopt);
     
